@@ -7,23 +7,28 @@
 
 OVERVIEW
   Lonsdaleite is a lightweight Python utility for preparing Graphviz [1] graphs
-  from the output of answer set solvers such as Clasp [2]. It is intended to
-  map nearly all of Graphviz's language (notably excepting subgraphs).
+  from the output of answer set solvers. It is intended to map nearly all of
+  Graphviz's language (notably excepting subgraphs).
 
   [1] http://www.graphviz.org/
-  [2] http://potassco.sourceforge.net/#clasp
 
 USAGE
-  Lonsdaleite expects a description of the desired graph encoded as ground facts
-  AnsProlog syntax (in the format you would feed to a solver).
+  Lonsdaleite expects a description of the desired graph encoded as ground
+  facts, one per line, in AnsProlog syntax (in the format you would feed to a
+  solver).
 
   cat some_logical_graph.lp | lonsdaleite | dot
+
+OPTIONS
+  -c  expect input piped from Clasp's output
+  -u  construct URL for Google's GraphViz Charts API
+  -b  open that URL in the default web browser
 
 MODELING INTERFACE
 
   graphviz_engine(Engine)  -- dot|neato|fdp|sfdp|twopi|circo (default: dot)
 
-  graphviz_graph_type(Type) -- graph|digraph (default: digraph)
+  graphviz_graph_type(Type) -- graph|digraph (default: graph)
 
   graphviz_node(N)         -- N must be a graphviz-friendly identifier
 
@@ -36,4 +41,7 @@ MODELING INTERFACE
   graphviz_global_node_attr(K,V)
   graphviz_global_edge_attr(K,V)
 
-  
+CAVEATS
+  When using the -c option, Lonsdaleite splits the answer set line on spaces
+  before parsing any of the terms. Avoid embedded spaces in your terms when
+  using this option. 

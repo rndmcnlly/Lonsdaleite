@@ -1,0 +1,126 @@
+#!/bin/env python
+# vim: ft=python
+
+import sys, getopt, urllib, webbrowser, re
+
+def usage():
+  print("""
+  -c  expect input piped from Clasp's output
+  -u  construct URL for Google's GraphViz Charts API
+  -b  open that URL in the default web browser
+  """)
+
+def main():
+  expectClasp = False
+  constructUrl = False
+  showInBrowser = False
+
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "cub")
+  except getopt.GetoptError, err:
+    print str(err)
+    usage()
+    sys.exit(2)  
+
+  for o, a in opts:
+    if o == "-c":
+      expectClasp = True
+    if o == "-u":
+      constructUrl = True
+    elif o == "-b":
+      showInBrowser = True
+
+  patternSpecs = {
+      "type": 1,
+      "engine": 1,
+      "node": 1,
+      "edge": 2,
+      "graph_attr": 2,
+      "node_attr": 3,
+      "edge_attr": 4,
+      "global_node_attr": 2,
+      "global_edge_attr": 2}
+  
+  patterns = {}
+  for k, v in patternSpecs.items():
+    functor = "graphviz_" + k
+    args = "\(" + ",".join(["(.*?)"] * v) + "\)"
+    patterns[k] = re.compile(functor + args)
+
+  graph = {}
+
+  for k in patternSpecs.keys():
+    graph[k] = []
+
+  graph['type'].append(('graph',))
+  graph['engine'].append(('dot',))
+  
+  def consider(term):
+    for k, v in patterns.items():
+      match = v.match(term)
+      if match:
+        graph[k].append(match.groups())
+        break
+
+  if expectClasp:
+    # look for all of the facts on a single line joined by spaces
+    for line in sys.stdin.readlines():
+      line = line.strip()
+      if line and line[0].islower():
+        terms = line.split(" ") # TODO: handle embedded spaces
+        for t in terms:
+          consider(t)
+  else:
+    # look for one fact per line
+    for line in sys.stdin.readlines():
+      consider(line.strip())
+
+  a_list = lambda seq: "[" + (",".join("%s=%s" % kv for kv in seq)) + "]"
+
+
+  graphType = graph['type'][-1][0]
+  connector = "->" if graphType == "digraph" else "--"
+  
+  graphvizCode = graphType
+
+  graphvizCode += '{'
+  
+  if graph['graph_attr']:
+      graphvizCode += "graph" + a_list(graph['graph_attr'])
+  
+  if graph['global_node_attr']:
+      graphvizCode += "node" + a_list(graph['global_node_attr'])
+  
+  if graph['global_edge_attr']:
+      graphvizCode += "edge" + a_list(graph['global_edge_attr'])
+  
+  nodes = []
+  for (n1,) in graph['node']:
+    attrs = [(k,v) for n1t,k,v in graph['node_attr'] if n1t is n1]
+    nodes.append(n1 + a_list(attrs) if attrs else n1)
+  graphvizCode += ';'.join(nodes)
+
+  graphvizCode += ';'
+  
+  edges = []
+  for (n1,n2) in graph['edge']:
+    attrs = [(k,v) for n1t,n2t,k,v in graph['edge_attr'] \
+                   if n1t is n1 and n2t is n2]
+    edges.append(n1 + connector + n2 + (a_list(attrs) if attrs else ""))
+  graphvizCode += ';'.join(edges)
+
+  graphvizCode += '}'
+
+  if constructUrl:
+    query = {'cht': "gv:%s" % graph['engine'][-1][0], 'chl': graphvizCode}
+    url = "http://chart.googleapis.com/chart?" + urllib.urlencode(query)
+    if showInBrowser:
+      webbrowser.open(url)
+    else:
+      print(url)
+  else:
+    print(graphvizCode)
+
+  
+if __name__ == "__main__":
+  main()
