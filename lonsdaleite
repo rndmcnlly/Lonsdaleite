@@ -1,10 +1,11 @@
 #!/bin/env python
 # vim: ft=python
 
-import sys, getopt, urllib, webbrowser, re
+import sys, getopt, webbrowser, re
 
 def usage():
   print("""
+  -d  dump graph after parsing
   -c  expect input piped from Clasp's output
   -u  construct URL for Google's GraphViz Charts API
   -b  open that URL in the default web browser
@@ -14,18 +15,21 @@ def main():
   expectClasp = False
   constructUrl = False
   showInBrowser = False
+  dumpGraph = False
 
   try:
-    opts, args = getopt.getopt(sys.argv[1:], "cub")
+    opts, args = getopt.getopt(sys.argv[1:], "dcub")
   except getopt.GetoptError, err:
     print str(err)
     usage()
     sys.exit(2)  
 
   for o, a in opts:
-    if o == "-c":
+    if o == "-d":
+      dumpGraph = True
+    elif o == "-c":
       expectClasp = True
-    if o == "-u":
+    elif o == "-u":
       constructUrl = True
     elif o == "-b":
       showInBrowser = True
@@ -75,6 +79,9 @@ def main():
     for line in sys.stdin.readlines():
       consider(line.strip())
 
+  if dumpGraph:
+    print(graph)
+
   a_list = lambda seq: "[" + (",".join("%s=%s" % kv for kv in seq)) + "]"
 
 
@@ -87,20 +94,21 @@ def main():
   
   if graph['graph_attr']:
       graphvizCode += "graph" + a_list(graph['graph_attr'])
+      graphvizCode += ';'
   
   if graph['global_node_attr']:
       graphvizCode += "node" + a_list(graph['global_node_attr'])
+      graphvizCode += ';'
   
   if graph['global_edge_attr']:
       graphvizCode += "edge" + a_list(graph['global_edge_attr'])
+      graphvizCode += ';'
   
   nodes = []
   for (n1,) in graph['node']:
     attrs = [(k,v) for n1t,k,v in graph['node_attr'] if n1t == n1]
-    print n1, attrs
     nodes.append(n1 + a_list(attrs) if attrs else n1)
   graphvizCode += ';'.join(nodes)
-
   graphvizCode += ';'
   
   edges = []
@@ -113,8 +121,9 @@ def main():
   graphvizCode += '}'
 
   if constructUrl:
-    query = {'cht': "gv:%s" % graph['engine'][-1][0], 'chl': graphvizCode}
-    url = "http://chart.googleapis.com/chart?" + urllib.urlencode(query)
+    cht = "gv:%s" % graph['engine'][-1][0]
+    chl = graphvizCode
+    url = "http://chart.googleapis.com/chart?chl=" + chl + "&cht=" + cht
     if showInBrowser:
       webbrowser.open(url)
     else:

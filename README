@@ -17,9 +17,12 @@ USAGE
   facts, one per line, in AnsProlog syntax (in the format you would feed to a
   solver).
 
-  cat some_logical_graph.lp | lonsdaleite | dot
+  $ cat some_ground_graph_instance.lp | lonsdaleite | dot
+  or
+  $ clingo example.lp | lonsdaleite -dcub
 
 OPTIONS
+  -d  dump graph after parsing
   -c  expect input piped from Clasp's output
   -u  construct URL for Google's GraphViz Charts API
   -b  open that URL in the default web browser
@@ -40,6 +43,15 @@ MODELING INTERFACE
 
   graphviz_global_node_attr(K,V)
   graphviz_global_edge_attr(K,V)
+
+HINTS
+  Look at the Lua code embedded in example.lp for a helper function that can be
+  used to easily build complex strings for use as attribute values.
+
+  INPUT: graphviz_node_attr(N,pos,@format("%s,%s!",X,Y)) :- at(N,X,Y).
+  OUTPUT: graphviz_node_attr(b,pos,"5,5!")
+  NOTE: Use the neato engine if you are generating the pos attribute with ASP.
+      
 
 CAVEATS
   When using the -c option, Lonsdaleite splits the answer set line on spaces
