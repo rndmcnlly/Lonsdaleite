@@ -96,7 +96,8 @@ def main():
   
   nodes = []
   for (n1,) in graph['node']:
-    attrs = [(k,v) for n1t,k,v in graph['node_attr'] if n1t is n1]
+    attrs = [(k,v) for n1t,k,v in graph['node_attr'] if n1t == n1]
+    print n1, attrs
     nodes.append(n1 + a_list(attrs) if attrs else n1)
   graphvizCode += ';'.join(nodes)
 
@@ -105,7 +106,7 @@ def main():
   edges = []
   for (n1,n2) in graph['edge']:
     attrs = [(k,v) for n1t,n2t,k,v in graph['edge_attr'] \
-                   if n1t is n1 and n2t is n2]
+                   if n1t == n1 and n2t == n2]
     edges.append(n1 + connector + n2 + (a_list(attrs) if attrs else ""))
   graphvizCode += ';'.join(edges)
 
